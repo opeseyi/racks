@@ -12,8 +12,14 @@ error RacksLogic__EnteredEthFailed();
 contract RacksLogic is VRFConsumerBaseV2 {
     using SafeMath for *;
 
+    enum RacksLogicState {
+        OPEN,
+        CALCULATING
+    }
+
     RacksKeeper public keeperAddress;
     VRFCoordinatorV2Interface private immutable vrfCoordinatorV2;
+    RacksLogicState public racksLogicState;
 
     address private immutable owner;
     uint256 totaledEthEntered;
@@ -62,9 +68,11 @@ contract RacksLogic is VRFConsumerBaseV2 {
         stakedEth = _stakedEth;
         stakedTokenAddress = _stakedTokenAddress;
         stakedToken = _stakedToken;
+        racksLogicState = RacksLogicState.OPEN;
     }
 
     function requestRandomWords() public notOwner returns (uint256 requestId) {
+        racksLogicState = RacksLogicState.CALCULATING;
         requestId = vrfCoordinatorV2.requestRandomWords(
             keyHash,
             subcriptionId,
@@ -83,6 +91,7 @@ contract RacksLogic is VRFConsumerBaseV2 {
 
     function enter() public payable notOwner {
         require(msg.value > gateFee, "Fee is less than gate fee");
+        require(racksLogicState == RacksLogicState.OPEN, "Enter is not allowed in this state");
 
         totaledEthEntered += msg.value;
 

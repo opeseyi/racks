@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 import "./interfaces/IRacksCollectible.sol";
 import "./RacksKeeper.sol";
 import "./RacksLogic.sol";
@@ -15,9 +16,15 @@ import "hardhat/console.sol";
 error RacksCollectible__GetEthFunctionFailed();
 error RacksCollectible__GetTokenFunctionFailedInTransfer();
 error RacksCollectible__GetTokenFunctionFailedInApprove();
+error RacksCollectible__UpkeepNotNeeded(uint256);
 
-contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
+contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterface {
     using SafeMath for uint256;
+
+    enum RacksCollectibleState {
+        OPEN,
+        CLOSE
+    }
 
     struct All {
         string eth;
@@ -29,6 +36,8 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
     VRFCoordinatorV2Interface private immutable vrfCoordinatorV2;
     RacksKeeper public keeperAddress;
     RacksLogic public newRacksLogic;
+    // RacksLogic public racksLogic;
+    RacksCollectibleState public racksCollectibleState;
 
     address public stackedTokenAddress;
 
@@ -36,6 +45,8 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
     uint256 public stackedTokenAmount;
     uint256 public yourNumberToGiveRandom;
     uint256 public randomNumber;
+    uint256 public interval;
+    uint256 public lastTimeStamp;
 
     All[] private stakes;
 
@@ -55,6 +66,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
 
     constructor(
         address payable _keeperAddress,
+        // address _RacksLogic,
         address _vrfCoordinatorV2,
         uint64 _subscriptionId,
         bytes32 _keyHash,
@@ -63,9 +75,11 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
         vrfCoordinatorV2Address = _vrfCoordinatorV2;
         keeperAddress = RacksKeeper(_keeperAddress);
         vrfCoordinatorV2 = VRFCoordinatorV2Interface(_vrfCoordinatorV2);
+        // racksLogic = RacksLogic(_RacksLogic);
         subcriptionId = _subscriptionId;
         callbackGaslimit = _callbackGaslimit;
         keyHash = _keyHash;
+        racksCollectibleState = RacksCollectibleState.CLOSE;
     }
 
     function getEth() public payable {
@@ -103,6 +117,10 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
         emit TokenStacked(msg.sender, tokenAddress, amount);
     }
 
+    function setTIme(uint256 _interval) public {
+        interval = _interval;
+    }
+
     function organizerStake() public {
         stakes.push(All("eth", stakedEth, stackedTokenAddress, stackedTokenAmount));
     }
@@ -125,7 +143,9 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
     }
 
     function createRaffle(uint256 _gateFee) public haveAtLeastOneStake {
+        require(_gateFee > 0, "createRaffle: _gateFee < 0");
         // uint256 gateFee = _gateFee;
+        lastTimeStamp = block.timestamp;
 
         newRacksLogic = new RacksLogic(
             payable(address(keeperAddress)),
@@ -139,6 +159,40 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2 {
             stakedEth,
             stackedTokenAmount
         );
+
+        racksCollectibleState = RacksCollectibleState.OPEN;
+    }
+
+    function checkUpkeep(
+        bytes memory /* checkData*/
+    )
+        public
+        view
+        override
+        returns (
+            bool upkeepNeeded,
+            bytes memory /* performData*/
+        )
+    {
+        require(interval > 0, "Interval < 0");
+        bool isOpen = RacksCollectibleState.OPEN == racksCollectibleState;
+        bool timePassed = ((block.timestamp - lastTimeStamp)) > interval;
+        upkeepNeeded = (isOpen && timePassed);
+        return (upkeepNeeded, "0x0");
+    }
+
+    function performUpkeep(
+        bytes memory /* checkData*/
+    ) public override {
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded) {
+            revert RacksCollectible__UpkeepNotNeeded(uint256(racksCollectibleState));
+        }
+
+        // address payable addr = payable(address(racksLogic));
+        // selfdestruct(addr);
+        address payable addr = payable(address(newRacksLogic));
+        selfdestruct(addr);
     }
 
     function getStakes(uint256 index) public view returns (All memory) {
