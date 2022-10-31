@@ -15,9 +15,11 @@ const deployCollectibles: DeployFunction = async (hre: HardhatRuntimeEnvironment
     // const chainId = network.config.chainId;
     const chainId = 31337;
     // console.log(chainId);
-    // const keeper = await ethers.getContract("RacksKeeper");
-    const keeper = await fixture(["keeper"]);
-    const keeperAddress = keeper.RacksKeeper.address;
+    await fixture(["keeper"]);
+    const keeper = await ethers.getContract("RacksKeeper");
+    // const keeper = await fixture(["keeper"]);
+    const keeperAddress = keeper.address;
+    console.log(keeperAddress);
     const keyHash = networkConfig[network.config.chainId!]["keyHash"];
     const callbackGaslimit = networkConfig[network.config.chainId!]["callbackGasLimit"];
     let vrfCoordinatorV2MockAddress;

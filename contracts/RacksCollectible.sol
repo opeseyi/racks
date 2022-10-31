@@ -90,7 +90,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
         require(
             s_stakedEth != 0 ||
                 s_stackedTokenAmount != 0 ||
-                (s_stakedNftAddress == address(0) && s_stakedNftId != 0),
+                (s_stakedNftAddress != address(0) && s_stakedNftId != 0),
             "HALOS:NoStakes"
         );
         _;
@@ -163,6 +163,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
     }
 
     function setTIme(uint256 _interval) external {
+        require(_interval != 0, "ST:_interval<0");
         s_interval = _interval;
 
         emit LogTimeSet(msg.sender, _interval);
@@ -372,5 +373,17 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
 
     function getStakes(uint256 index) external view returns (All memory) {
         return s_stakes[index];
+    }
+
+    function gasSubcriptionId() external view returns (uint256) {
+        return i_subcriptionId;
+    }
+
+    function getKeyHash() external view returns (bytes32) {
+        return i_keyHash;
+    }
+
+    function getCallbackGaslimit() external view returns (uint32) {
+        return i_callbackGaslimit;
     }
 }

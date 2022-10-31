@@ -3,13 +3,16 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+// import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 // THIS CONTRACT PERMIT ANYONE TO WITHDRAW
 // I.E THIS CONTRACT IS VULNERABLE TO ATTACK
 error RacksKeeper__TransferFailed();
 error RacksKeeper__TokenNotTransfer();
 
-contract RacksKeeper {
+contract RacksKeeper is IERC721Receiver {
     bool public isAllowed;
 
     constructor() {}
@@ -44,5 +47,14 @@ contract RacksKeeper {
             revert RacksKeeper__TokenNotTransfer();
         }
         // isAllowed = false;
+    }
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes memory
+    ) public virtual override returns (bytes4) {
+        return this.onERC721Received.selector;
     }
 }
