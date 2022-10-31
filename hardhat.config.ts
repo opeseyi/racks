@@ -17,7 +17,15 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 const config: HardhatUserConfig = {
     defaultNetwork: "hardhat",
-    solidity: "0.8.16",
+    solidity: {
+        version: "0.8.16",
+        settings: {
+            optimizer: {
+                enabled: true,
+                runs: 1000,
+            },
+        },
+    },
     networks: {
         hardhat: {
             chainId: 31337,

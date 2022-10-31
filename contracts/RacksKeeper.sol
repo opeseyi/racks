@@ -12,25 +12,29 @@ error RacksKeeper__TokenNotTransfer();
 contract RacksKeeper {
     bool public isAllowed;
 
+    constructor() {}
+
+    receive() external payable {}
+
     function getBalance() external view returns (uint256) {
         return address(this).balance;
     }
 
-    function unsafeTransferEth(address _to, uint256 _amount) public payable {
+    function unsafeTransferEth(address _to, uint256 _amount) external payable {
         // require(isAllowed, "Not Allowed");
         (bool success, ) = payable(_to).call{value: _amount}("");
         if (!success) {
             revert RacksKeeper__TransferFailed();
         }
 
-        isAllowed = false;
+        // isAllowed = false;
     }
 
     function unsafeTransferToken(
         address tokenAddress,
         address _to,
         uint256 amount
-    ) public {
+    ) external {
         // require(isAllowed, "Not Allowed");
         require(tokenAddress != address(0), "getToken: Token address == 0");
         require(amount > 0, "getToken: Amount should be greater than zero");
@@ -39,8 +43,6 @@ contract RacksKeeper {
         if (!isSuccessful) {
             revert RacksKeeper__TokenNotTransfer();
         }
-        isAllowed = false;
+        // isAllowed = false;
     }
-
-    receive() external payable {}
 }
