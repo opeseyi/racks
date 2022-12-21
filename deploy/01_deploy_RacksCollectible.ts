@@ -23,9 +23,10 @@ const deployCollectibles: DeployFunction = async (hre: HardhatRuntimeEnvironment
     const keyHash = networkConfig[network.config.chainId!]["keyHash"];
     const callbackGaslimit = networkConfig[network.config.chainId!]["callbackGasLimit"];
     let vrfCoordinatorV2MockAddress;
+    let vrfCoordinatorV2Mock: any;
     let subscriptionId;
 
-    if (chainId === 31337) {
+    if (chainId == 31337) {
         await deployments.fixture(["mocks"]);
         const vrfCoordinatorV2Mock = await ethers.getContract("VRFCoordinatorV2Mock");
         vrfCoordinatorV2MockAddress = vrfCoordinatorV2Mock.address;
@@ -59,6 +60,7 @@ const deployCollectibles: DeployFunction = async (hre: HardhatRuntimeEnvironment
         waitConfirmations: waitConfirmations,
     });
 
+    // await vrfCoordinatorV2Mock.addConsumer(subscriptionId, collectable.address);
     console.log(`Deployed collectable at ${collectable.address}`);
 };
 

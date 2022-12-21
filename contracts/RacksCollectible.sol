@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
+import "./interfaces/IRacksCollectible.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./RacksKeeper.sol";
@@ -21,7 +22,12 @@ error RacksCollectible__TransferTokenFromKeeperToUserFailed();
 error RacksCollectible__TransferEthFromKeeperToUserFailed();
 error RacksCollectible__TransferPriceToUserFailed();
 
-contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterface {
+contract RacksCollectible is
+    IRacksCollectible,
+    Ownable,
+    VRFConsumerBaseV2,
+    KeeperCompatibleInterface
+{
     using SafeMath for uint256;
 
     enum RacksCollectibleState {
@@ -43,7 +49,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
 
     VRFCoordinatorV2Interface private immutable i_vrfCoordinatorV2;
     RacksKeeper private immutable i_keeperAddress;
-    RacksLogic private s_newRacksLogic;
+    RacksLogic public s_newRacksLogic;
     // RacksLogic private racksLogic;
     RacksCollectibleState private s_racksCollectibleState;
     address private s_stackedTokenAddress;
@@ -173,6 +179,11 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
         s_stakes.push(All(s_stakedEth, "eth", s_stackedTokenAmount, s_stackedTokenAddress));
     }
 
+    function setRandomNumber(uint256 _amount) external {
+        require(_amount != 0, "_amount<0");
+        s_yourNumberToGiveRandom = _amount;
+    }
+
     function requestRandomWords() external onlyOwner returns (uint256 requestId) {
         requestId = i_vrfCoordinatorV2.requestRandomWords(
             i_keyHash,
@@ -181,6 +192,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
             i_callbackGaslimit,
             NUM_WORDS
         );
+        // console.log(i_subcriptionId);
         emit LogRequestedWords(msg.sender, requestId);
     }
 
@@ -209,7 +221,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
             s_stakedEth,
             s_stackedTokenAmount
         );
-
+        // console.log(address(s_newRacksLogic));
         s_racksCollectibleState = RacksCollectibleState.OPEN;
 
         emit LogRaffleCreated(msg.sender, _gateFee, address(s_newRacksLogic), s_lastTimeStamp);
@@ -252,7 +264,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
         address payable addr = payable(address(s_newRacksLogic));
         selfdestruct(addr);
 
-        requestWithdraw();
+        if (s_isClaimed) requestWithdraw();
     }
 
     function requestWithdraw() public {
@@ -375,7 +387,7 @@ contract RacksCollectible is Ownable, VRFConsumerBaseV2, KeeperCompatibleInterfa
         return s_stakes[index];
     }
 
-    function gasSubcriptionId() external view returns (uint256) {
+    function getSubcriptionId() external view returns (uint256) {
         return i_subcriptionId;
     }
 

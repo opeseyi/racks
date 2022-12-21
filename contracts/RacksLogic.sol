@@ -5,12 +5,13 @@ pragma solidity 0.8.16;
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./interfaces/IRacksLogic.sol";
 import "./RacksKeeper.sol";
 
 error RacksLogic__EnteredEthFailed();
 error RacksLogic__TransferPriceToUserFailed();
 
-contract RacksLogic is VRFConsumerBaseV2 {
+contract RacksLogic is IRacksLogic, VRFConsumerBaseV2 {
     using SafeMath for uint256;
 
     enum RacksLogicState {
@@ -175,5 +176,9 @@ contract RacksLogic is VRFConsumerBaseV2 {
 
     function getTotaledEthEntered() external view returns (uint256) {
         return s_totaledEthEntered;
+    }
+
+    function getStackedEth() external view returns (uint256) {
+        return i_stakedEth;
     }
 }

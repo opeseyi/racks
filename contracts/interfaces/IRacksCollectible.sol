@@ -1,20 +1,27 @@
-// // SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 
-// pragma solidity 0.8.16;
+pragma solidity 0.8.16;
 
-// interface IRacksCollectible {
-//     struct All {
-//         string eth;
-//         uint256 amtOfETh;
-//         address tokenAddress;
-//         uint256 amtOfToken;
-//     }
+interface IRacksCollectible {
+    function getEth() external payable;
 
-//     function getEth() external payable;
+    function getToken(address tokenAddress, uint256 amount) external;
 
-//     function getToken() external;
+    function getNft(address _nftAddress, uint256 _tokenId) external;
 
-//     function createRaffle() external;
+    function setTIme(uint256 _interval) external;
 
-//     function getStakes(uint256 index) external view returns (All memory);
-// }
+    function organizerStake() external;
+
+    function setRandomNumber(uint256 _amount) external;
+
+    function requestRandomWords() external returns (uint256 requestId);
+
+    function createRaffle(uint256 _gateFee) external;
+
+    function requestWithdraw() external;
+
+    function withdrawStakes() external;
+
+    function windrawPrice() external;
+}
